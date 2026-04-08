@@ -2,9 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <time.h>
+
+static int compareServices(const void* a, const void* b) {
+    const ServiceInfo* sa = (const ServiceInfo*)a;
+    const ServiceInfo* sb = (const ServiceInfo*)b;
+    return strcasecmp(sa->name, sb->name);
+}
 
 static const char* stateToStr(ServiceState state) {
     switch (state) {
@@ -57,25 +64,59 @@ int rsvcList(void) {
         return 1;
     }
 
-    printTableHeader();
-
-    struct dirent* entry;
-    ServiceInfo svc = {0};
+    ServiceInfo* services = NULL;
+    size_t count = 0;
+    size_t capacity = 16; // Initial
     
+    services = malloc(capacity * sizeof(ServiceInfo));
+    if (!services) {
+        closedir(dir);
+        fprintf(stderr, "Memory allocation failed.\n");
+        return 1;
+    } 
+
+    struct dirent* entry; 
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_name[0] == '.') continue;
+        
+        // Resize array if needed
+        if (count >= capacity) {
+            capacity *= 2;
+            ServiceInfo* temp = realloc(services, capacity * sizeof(ServiceInfo));
+            if (!temp) {
+                free(services);
+                closedir(dir);
+                fprintf(stderr, "Memory reallocation failed.\n");
+                return 1;
+            }
+            services = temp;
+        }
+    
+        ServiceInfo* svc = &services[count];
 
-        strncpy(svc.name, entry->d_name, sizeof(svc.name) - 1);
-        svc.name[sizeof(svc.name)-1] = '\0';
+        strncpy(svc->name, entry->d_name, sizeof(svc->name) - 1);
+        svc->name[sizeof(svc->name)-1] = '\0';
 
-        svc.enabled = true;
-        svc.state   = getServiceState(svc.name);
-        svc.pid     = getServicePid(svc.name);
-        svc.uptime  = getServiceUptime(svc.name);
+        svc->enabled = true;
+        svc->state   = getServiceState(svc->name);
+        svc->pid     = getServicePid(svc->name);
+        svc->uptime  = getServiceUptime(svc->name);
 
-        printServiceRow(&svc);
+        count++;
     }
 
     closedir(dir);
+
+    // Sort alphabeticaly by service name
+    qsort(services, count, sizeof(ServiceInfo), compareServices);
+
+    // Print table
+    printTableHeader();
+    for (size_t i = 0; i < count; i++) {
+        printServiceRow(&services[i]);
+    }
+
+    free(services);
+    return 0;
     return 0;
 }
