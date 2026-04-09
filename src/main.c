@@ -80,9 +80,12 @@ int main(int argc, char** argv) {
             return rsvcRestart(argv[2]);
 
         case CMD_ENABLE:
+            checkArgs(argc);
+            return rsvcEnable(argv[2]);
+
         case CMD_DISABLE:
-            fprintf(stderr, "%s: command not implemented yet.\n", argv[1]);
-            return 1;
+            checkArgs(argc);
+            return rsvcDisable(argv[2]);
 
         case CMD_HELP:
             printUsage();
