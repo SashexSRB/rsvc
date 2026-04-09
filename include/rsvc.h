@@ -15,6 +15,17 @@ typedef enum {
     STATE_UNKNOWN
 } ServiceState;
 
+typedef enum {
+    CMD_LIST,
+    CMD_START,
+    CMD_STOP,
+    CMD_RESTART,
+    CMD_ENABLE,
+    CMD_DISABLE,
+    CMD_HELP,
+    CMD_UNKNOWN
+} Command;
+
 typedef struct {
     char         name[256];
     ServiceState state;

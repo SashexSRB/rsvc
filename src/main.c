@@ -3,6 +3,33 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct {
+    const char *name;
+    Command     cmd;
+} CommandEntry;
+
+static const CommandEntry commands[] = {
+    { "list",    CMD_LIST    },
+    { "start",   CMD_START   },
+    { "stop",    CMD_STOP    },
+    { "restart", CMD_RESTART },
+    { "enable",  CMD_ENABLE  },
+    { "disable", CMD_DISABLE },
+    { "help",    CMD_HELP    },
+    { "--help",  CMD_HELP    },
+    { "-h",      CMD_HELP    },
+    { NULL,      CMD_UNKNOWN } // end marker 
+};
+
+static Command getCommand(const char *arg) {
+    if (!arg) return CMD_UNKNOWN;
+
+    for (const CommandEntry *c = commands; c->name != NULL; ++c) {
+        if (strcmp(arg, c->name) == 0) return c->cmd;
+    }
+    return CMD_UNKNOWN;
+}
+
 static void printUsage(void) {
     printf("Usage: rsvc <command> [service]\n\n");
     printf("Commands:\n");
@@ -33,30 +60,39 @@ int main(int argc, char** argv) {
         printUsage();
         return 1;
     }
+    
+    Command cmd = getCommand(argv[1]);
 
-    const char *cmd = argv[1];
+    switch (cmd) {
+        case CMD_LIST:
+            return rsvcList();
 
-    if (strcmp(cmd, "list") == 0) {
-        return rsvcList();        
-    } else if (strcmp(cmd, "enable") == 0) {
-        checkArgs(argc);
-        fprintf(stderr, "NOT IMPLEMENTED, EXITING...\n");
-        return 0; // temp
-    } else if (strcmp(cmd, "disable") == 0) {
-        checkArgs(argc);
-        fprintf(stderr, "NOT IMPLEMENTED, EXITING...\n");
-        return 0; // temp
-    } else if (strcmp(cmd, "start") == 0 || strcmp(cmd, "stop") == 0 || strcmp(cmd, "restart") == 0) {
-        checkArgs(argc);
-        fprintf(stderr, "%s NOT IMPLEMENTED, EXITING...\n", cmd);
-        return 0; // temp
-    } else if (strcmp(cmd, "--help") == 0 || strcmp(cmd, "-h") == 0) {
-        printUsage();
-        return 0;
-    } else {
-        fprintf(stderr, "Unknown command: %s\n\n", cmd);
-        printUsage();
-        return 1;
+        case CMD_START:
+            checkArgs(argc);
+            return rsvcStart(argv[2]);
+
+        case CMD_STOP:
+            checkArgs(argc);
+            return rsvcStop(argv[2]);
+        
+        case CMD_RESTART:
+            checkArgs(argc);
+            return rsvcRestart(argv[2]);
+
+        case CMD_ENABLE:
+        case CMD_DISABLE:
+            fprintf(stderr, "%s: command not implemented yet.\n", argv[1]);
+            return 1;
+
+        case CMD_HELP:
+            printUsage();
+            return 0;
+
+        case CMD_UNKNOWN:
+        default:
+            fprintf(stderr, "Unknown command: %s\n\n", argv[1]);
+            printUsage();
+            return 1;
     }
 }
 
