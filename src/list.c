@@ -58,9 +58,9 @@ void printServiceRow(const ServiceInfo* svc) {
 }
 
 int rsvcList(void) {
-    DIR* dir = opendir(ENABLED_DIR);
+    DIR* dir = opendir(SV_DIR);
     if (!dir) {
-        perror("Cannot open enabled services directory");
+        perror("Cannot open services directory");
         return 1;
     }
 
@@ -97,7 +97,7 @@ int rsvcList(void) {
         strncpy(svc->name, entry->d_name, sizeof(svc->name) - 1);
         svc->name[sizeof(svc->name)-1] = '\0';
 
-        svc->enabled = true;
+        svc->enabled = isEnabled(svc->name);
         svc->state   = getServiceState(svc->name);
         svc->pid     = getServicePid(svc->name);
         svc->uptime  = getServiceUptime(svc->name);
